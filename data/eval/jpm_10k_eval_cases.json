@@ -1,0 +1,86 @@
+[
+  {
+    "qid": "jpm_q1",
+    "question": "What are JPMorgan Chase's reportable business segments?",
+    "task_type": "qa",
+    "reference_answer": "JPMorgan Chase reports three business segments for management reporting purposes: Consumer & Community Banking (CCB), Commercial & Investment Bank (CIB), and Asset & Wealth Management (AWM), with remaining activities reported in Corporate.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q2",
+    "question": "What are JPMorgan Chase's principal bank and non-bank subsidiaries?",
+    "task_type": "qa",
+    "reference_answer": "The principal bank subsidiary is JPMorgan Chase Bank, National Association. The principal non-bank subsidiary is J.P. Morgan Securities LLC, a U.S. broker-dealer. The filing also identifies J.P. Morgan Securities plc and J.P. Morgan SE as principal operating subsidiaries outside the U.S.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q3",
+    "question": "How does JPMorgan Chase describe its competitive environment?",
+    "task_type": "qa",
+    "reference_answer": "JPMorgan Chase operates in highly competitive environments against banks, brokerage firms, investment banking companies, hedge funds, private equity firms, asset managers, credit card companies, fintech and internet-based competitors, among others. It competes on product and service quality, variety, execution, innovation, reputation, and price.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q4",
+    "question": "What regulatory risks does JPMorgan Chase disclose?",
+    "task_type": "qa",
+    "reference_answer": "The filing states that JPMorgan Chase is subject to extensive regulation under U.S. federal and state laws and laws in non-U.S. jurisdictions. Regulatory challenges, litigation, supervision, compliance requirements, and changes in applicable rules may affect the scope, timing, or requirements of regulations applicable to the Firm.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q5",
+    "question": "What does the filing say about liquidity risk management?",
+    "task_type": "qa",
+    "reference_answer": "The filing describes liquidity risk management through governance and planning mechanisms including the Contingency Funding Plan, liquidity risk limits, indicators, risk appetite tolerances, and alternative contingent funding and liquidity resources available during stress events.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q6",
+    "question": "How does JPMorgan Chase describe cybersecurity or technology risk?",
+    "task_type": "qa",
+    "reference_answer": "The filing discloses that cybersecurity and technology risks, including risks from advanced technologies such as AI, could disrupt operations, cause erroneous transactions, compromise data privacy, infringe intellectual property, harm clients and customers, or impair business decision-making.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q7",
+    "question": "What does the filing say about risk governance?",
+    "task_type": "qa",
+    "reference_answer": "JPMorgan Chase describes a Firmwide risk governance framework involving risk drivers, risk types, and risk impacts. Independent Risk Management includes Risk Management and Compliance, and the Chief Risk Officer leads the function subject to Board Risk Committee approval.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q8",
+    "question": "What are the main categories of risk described in the filing's risk governance discussion?",
+    "task_type": "qa",
+    "reference_answer": "The filing categorizes risks into broad risk types including strategic risk, credit and investment risk, liquidity risk, market risk, operational risk, compliance risk, conduct risk, legal risk, reputation risk, and model risk, depending on the relevant discussion.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q9",
+    "question": "How does the filing describe market risk management?",
+    "task_type": "qa",
+    "reference_answer": "Market risk management addresses the risk that changes in market conditions, such as interest rates, credit spreads, foreign exchange rates, commodity prices, or equity prices, could affect the value of positions and earnings.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q10",
+    "question": "What does the filing say about capital regulation or capital requirements?",
+    "task_type": "qa",
+    "reference_answer": "The filing discusses capital risks and regulatory capital requirements, including the possibility that JPMorgan Chase's ability to distribute capital to shareholders or support business activities could be limited if it does not satisfy applicable regulatory capital requirements.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q11",
+    "question": "How does JPMorgan Chase describe credit risk?",
+    "task_type": "qa",
+    "reference_answer": "Credit and investment risk is described as risk associated with default or changes in the credit profile of clients, counterparties, or customers, or loss of principal or reduced expected returns on investments, including consumer credit risk, wholesale credit risk, and investment portfolio risk.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  },
+  {
+    "qid": "jpm_q12",
+    "question": "What does the filing say about AI-related risks?",
+    "task_type": "qa",
+    "reference_answer": "The filing states that rapid development and deployment of advanced technologies, including generative and agentic AI systems, may create risks such as system failures, inappropriate use, lack of transparency, inaccurate or biased outputs, cyber exposure, data loss, or operational disruption.",
+    "source_dataset": "jpm_2025_10k_chunks.jsonl"
+  }
+]

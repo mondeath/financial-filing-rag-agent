@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Local environment
+.env
+.venv/
+venv/
+
+# Large or locally prepared raw datasets.
+data/raw/*.jsonl
+data/raw/*.htm
+!data/raw/.gitkeep
+!data/raw/spec.md
+
+# Generated secondary dataset artifacts.
+data/raw/finance_docs.jsonl
+data/processed/chunks.jsonl
+data/eval/eval_cases.json
+
+# Generated retrieval indexes.
+index/index_store
+index/*.meta.json
+index/*.pkl
+index/*.sqlite3
