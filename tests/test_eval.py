@@ -3,7 +3,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from src.eval.evaluator import build_eval_report, load_eval_cases, run_eval_cases
+from src.eval.evaluator import (
+    build_eval_report,
+    build_eval_summary,
+    load_eval_cases,
+    run_eval_cases,
+)
 from src.llm.base import AnswerGenerator
 from src.pipeline.rag_pipeline import RAGPipeline
 from src.retrieval.retriever import RetrievedChunk
@@ -85,6 +90,7 @@ class EvalTests(unittest.TestCase):
         ]
         results = run_eval_cases(pipeline=pipeline, cases=cases, top_k=4)
         report = build_eval_report(results)
+        summary = build_eval_summary(results)
         self.assertEqual(len(results), 1)
         self.assertIn("Eval Summary:", report)
         self.assertIn("Manual Review:", report)
@@ -92,6 +98,9 @@ class EvalTests(unittest.TestCase):
         self.assertIn("Retrieved Chunks:", report)
         self.assertIn("section=Item 1 Business", report)
         self.assertIn("embedding=0.9000", report)
+        self.assertEqual(summary.case_count, 1)
+        self.assertEqual(summary.answered_count, 1)
+        self.assertAlmostEqual(summary.avg_sources_per_answer, 1.0, places=3)
 
 
 def load_eval_cases_from_dict(payload: dict):

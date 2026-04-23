@@ -22,6 +22,16 @@ class EvalResult:
     lexical_overlap: float
 
 
+@dataclass
+class EvalSummary:
+    case_count: int
+    answered_count: int
+    insufficient_information_count: int
+    avg_lexical_overlap: float
+    avg_sources_per_answer: float
+    avg_evidence_items_per_answer: float
+
+
 def load_eval_cases(path: Path) -> list[EvalCase]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     cases: list[EvalCase] = []
@@ -61,19 +71,16 @@ def build_eval_report(results: list[EvalResult]) -> str:
     if not results:
         return "No eval results."
 
-    answered_count = sum(1 for result in results if result.response.answer != "insufficient information")
-    avg_overlap = sum(result.lexical_overlap for result in results) / len(results)
-    avg_sources = sum(len(result.response.sources) for result in results) / len(results)
-    avg_evidence = sum(len(result.response.evidence) for result in results) / len(results)
+    summary = build_eval_summary(results)
 
     sections = [
         "Eval Summary:",
-        f"- cases: {len(results)}",
-        f"- answered: {answered_count}",
-        f"- insufficient_information: {len(results) - answered_count}",
-        f"- avg_lexical_overlap_vs_reference: {avg_overlap:.3f}",
-        f"- avg_sources_per_answer: {avg_sources:.2f}",
-        f"- avg_evidence_items_per_answer: {avg_evidence:.2f}",
+        f"- cases: {summary.case_count}",
+        f"- answered: {summary.answered_count}",
+        f"- insufficient_information: {summary.insufficient_information_count}",
+        f"- avg_lexical_overlap_vs_reference: {summary.avg_lexical_overlap:.3f}",
+        f"- avg_sources_per_answer: {summary.avg_sources_per_answer:.2f}",
+        f"- avg_evidence_items_per_answer: {summary.avg_evidence_items_per_answer:.2f}",
         "",
     ]
 
@@ -97,6 +104,33 @@ def build_eval_report(results: list[EvalResult]) -> str:
             ]
         )
     return "\n".join(sections).strip()
+
+
+def build_eval_summary(results: list[EvalResult]) -> EvalSummary:
+    if not results:
+        return EvalSummary(
+            case_count=0,
+            answered_count=0,
+            insufficient_information_count=0,
+            avg_lexical_overlap=0.0,
+            avg_sources_per_answer=0.0,
+            avg_evidence_items_per_answer=0.0,
+        )
+
+    answered_count = sum(
+        1 for result in results if result.response.answer != "insufficient information"
+    )
+    avg_overlap = sum(result.lexical_overlap for result in results) / len(results)
+    avg_sources = sum(len(result.response.sources) for result in results) / len(results)
+    avg_evidence = sum(len(result.response.evidence) for result in results) / len(results)
+    return EvalSummary(
+        case_count=len(results),
+        answered_count=answered_count,
+        insufficient_information_count=len(results) - answered_count,
+        avg_lexical_overlap=avg_overlap,
+        avg_sources_per_answer=avg_sources,
+        avg_evidence_items_per_answer=avg_evidence,
+    )
 
 
 def _format_retrieved_chunks(retrieved_chunks) -> str:

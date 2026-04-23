@@ -355,6 +355,14 @@ Possible directions later:
 
 Your goal is not just to make it work. Your goal is to compare behavior against the hashing baseline.
 
+This repository now includes a small comparison script:
+
+```bash
+python3 scripts/compare_embedding_backends.py --limit 5
+```
+
+It keeps the JPM corpus and eval slice fixed, runs the hashing baseline first, and then runs the configured remote embedding backend if it is available. That makes it easier to reason about whether a change in retrieval quality is really coming from the embedding layer.
+
 ### Exercise 4: Write 10 eval questions
 
 For each question, inspect:

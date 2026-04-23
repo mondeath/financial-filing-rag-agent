@@ -173,21 +173,31 @@ class FallbackEmbeddingModel(EmbeddingModel):
 
 
 def build_embedding_model() -> EmbeddingModel:
-    fallback = HashingEmbeddingModel()
     provider = os.getenv("EMBEDDING_PROVIDER", "").strip().lower()
     if provider != "openai":
-        return fallback
+        return HashingEmbeddingModel()
 
+    primary = build_remote_embedding_model_from_env()
+    if primary is None:
+        return HashingEmbeddingModel()
+    fallback = HashingEmbeddingModel(dimension=primary.dimension)
+    return FallbackEmbeddingModel(primary=primary, fallback=fallback)
+
+
+def build_remote_embedding_model_from_env() -> OpenAICompatibleEmbeddingModel | None:
     api_key = os.getenv("EMBEDDING_API_KEY", os.getenv("OPENAI_API_KEY", "")).strip()
     if not api_key:
-        return fallback
+        return None
 
-    base_url = os.getenv("EMBEDDING_BASE_URL", os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")).strip()
+    base_url = os.getenv(
+        "EMBEDDING_BASE_URL",
+        os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+    ).strip()
     model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small").strip()
     timeout = float(os.getenv("EMBEDDING_TIMEOUT", os.getenv("OPENAI_TIMEOUT", "60")))
     dimension = int(os.getenv("OPENAI_EMBEDDING_DIMENSION", str(EMBEDDING_DIMENSION)))
     batch_size = int(os.getenv("OPENAI_EMBEDDING_BATCH_SIZE", "32"))
-    primary = OpenAICompatibleEmbeddingModel(
+    return OpenAICompatibleEmbeddingModel(
         OpenAICompatibleEmbeddingConfig(
             api_key=api_key,
             base_url=base_url,
@@ -197,7 +207,6 @@ def build_embedding_model() -> EmbeddingModel:
             batch_size=batch_size,
         )
     )
-    return FallbackEmbeddingModel(primary=primary, fallback=fallback)
 
 
 def _extract_embedding(payload: dict) -> list[float]:

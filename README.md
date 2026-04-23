@@ -261,6 +261,12 @@ python3 scripts/prepare_eval_dataset.py
 python3 main.py eval
 ```
 
+Compare hashing and real embedding retrieval on the JPM eval slice:
+
+```bash
+python3 scripts/compare_embedding_backends.py --limit 5
+```
+
 If `LLM_PROVIDER=openai` and a valid API key is configured, the CLI will use a real LLM backend automatically. If not, it falls back to the local grounded generator with no CLI change.
 
 ## Demo Workflow
@@ -302,6 +308,8 @@ This evaluates the same pipeline on a small curated JPM 10-K question set and sh
 For a shorter demo, steps 2 and 3 are usually enough to show the grounded answer path and retrieval transparency.
 
 A static example report from a real run is available at [reports/sample_eval.md](/Users/ranxu/workspace/Rag-finance/reports/sample_eval.md).
+
+For embedding-backend comparison, the repository also includes `scripts/compare_embedding_backends.py`, which generates `reports/embedding_comparison.md`.
 
 ## Retrieval And Reranking
 
@@ -390,6 +398,8 @@ In the current local environment, `faiss` and `numpy` are not installed, so the 
 The answer generation layer prefers a real LLM when configured, but automatically falls back to a local grounded generator when no API key is available or the remote call fails. This keeps the repository runnable end-to-end while still making the demo stronger for GitHub and interview walkthroughs.
 
 The embedding layer follows the same pattern: it prefers a real OpenAI-style embedding backend when configured, but falls back to the local hashing embedding baseline if no embedding configuration is available or the API request fails.
+
+For experiments, the comparison script uses a strict remote-embedding path when configured, so the report can distinguish between an actual remote run and a skipped or failed remote backend.
 
 ## Tests
 
