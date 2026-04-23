@@ -5,7 +5,7 @@ from typing import Literal
 from config import DEFAULT_TOP_K
 from src.data.schemas import ChunkRecord
 from src.retrieval.embeddings import EmbeddingModel
-from src.retrieval.index import IndexSearchResult, VectorIndex
+from src.retrieval.index import IndexSearchResult, VectorIndex, load_index_metadata
 
 
 @dataclass
@@ -29,6 +29,15 @@ class Retriever:
 
     @classmethod
     def load(cls, index_path: Path, embedding_model: EmbeddingModel) -> "Retriever":
+        metadata = load_index_metadata(index_path)
+        stored_embedding = metadata.get("embedding", {})
+        stored_dimension = stored_embedding.get("dimension")
+        if isinstance(stored_dimension, int) and stored_dimension != embedding_model.dimension:
+            raise ValueError(
+                "Embedding dimension mismatch between index and query model: "
+                f"index={stored_dimension}, query_model={embedding_model.dimension}. "
+                "Rebuild the index with the current embedding configuration."
+            )
         index = VectorIndex.load(index_path)
         return cls(index=index, embedding_model=embedding_model)
 

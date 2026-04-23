@@ -7,7 +7,7 @@ from src.eval.evaluator import build_eval_report, load_eval_cases, run_eval_case
 from src.llm.generator import build_answer_generator
 from src.pipeline.debug import format_prompt_debug, format_retrieval_debug
 from src.pipeline.rag_pipeline import RAGPipeline
-from src.retrieval.embeddings import HashingEmbeddingModel
+from src.retrieval.embeddings import build_embedding_model
 from src.retrieval.index import IndexBuildResult, build_index_from_chunks
 from src.retrieval.retriever import Retriever
 
@@ -28,21 +28,24 @@ def handle_build_chunks(_: argparse.Namespace) -> None:
 
 def handle_build_index(args: argparse.Namespace) -> None:
     _ensure_parent(INDEX_STORE_PATH)
+    embedding_model = build_embedding_model()
     result: IndexBuildResult = build_index_from_chunks(
         chunks_path=args.chunks,
         output_path=INDEX_STORE_PATH,
-        embedding_model=HashingEmbeddingModel(),
+        embedding_model=embedding_model,
     )
     print(
-        f"Built index backend={result.backend} chunks={result.chunk_count} "
+        f"Built index backend={result.backend} embedding={embedding_model.describe()} "
+        f"chunks={result.chunk_count} "
         f"path={INDEX_STORE_PATH}"
     )
 
 
 def handle_ask(args: argparse.Namespace) -> None:
+    embedding_model = build_embedding_model()
     retriever = Retriever.load(
         index_path=INDEX_STORE_PATH,
-        embedding_model=HashingEmbeddingModel(),
+        embedding_model=embedding_model,
     )
     pipeline = RAGPipeline(
         retriever=retriever,
@@ -59,9 +62,10 @@ def handle_ask(args: argparse.Namespace) -> None:
 
 
 def handle_eval(args: argparse.Namespace) -> None:
+    embedding_model = build_embedding_model()
     retriever = Retriever.load(
         index_path=INDEX_STORE_PATH,
-        embedding_model=HashingEmbeddingModel(),
+        embedding_model=embedding_model,
     )
     pipeline = RAGPipeline(
         retriever=retriever,

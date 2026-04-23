@@ -14,6 +14,28 @@ This project follows the scope in [RAG_Project_Spec.md](/Users/ranxu/workspace/R
 - grounded answer generation
 - citation-style evidence output
 
+## Highlights
+
+- Focused corpus: a curated JPMorgan Chase 2025 Form 10-K dataset instead of a broad, noisy multi-source corpus
+- Grounded output: answers are returned in `Answer / Sources / Evidence` format
+- Inspectable retrieval: `--debug` exposes rerank score, section, topic, and quality metadata
+- Metadata-aware ranking: retrieval combines vector similarity with SEC filing structure
+- Demo-friendly CLI: the full pipeline can be shown with `build-index`, `ask`, and `eval`
+
+## Why This Project
+
+This repository is intentionally scoped as a small but explainable RAG system rather than a large production platform.
+
+The goal is to demonstrate the core engineering pieces of a financial filing assistant:
+
+- dataset preparation
+- chunk schema design
+- retrieval and reranking
+- grounded generation
+- evaluation and debugging
+
+Using a single high-quality 10-K filing keeps the task bounded, improves answer traceability, and makes the system easier to evaluate and explain in an interview setting.
+
 ## Current Status
 
 Implemented:
@@ -241,6 +263,46 @@ python3 main.py eval
 
 If `LLM_PROVIDER=openai` and a valid API key is configured, the CLI will use a real LLM backend automatically. If not, it falls back to the local grounded generator with no CLI change.
 
+## Demo Workflow
+
+For a quick walkthrough, the most useful sequence is to build the retrieval index, run one grounded question, inspect the retrieved evidence, and then run a short evaluation sweep.
+
+1. Build the JPM 10-K index
+
+```bash
+python3 main.py build-index --chunks data/processed/jpm_2025_10k_chunks.jsonl
+```
+
+This prepares the retrieval index over the curated JPMorgan 10-K chunk set and stores chunk metadata for reranking and debugging.
+
+2. Ask a question
+
+```bash
+python3 main.py ask "What are JPMorgan Chase's main business segments?"
+```
+
+This returns a citation-style answer constrained to retrieved filing context.
+
+3. Inspect retrieval diagnostics
+
+```bash
+python3 main.py ask "What are JPMorgan Chase's main business segments?" --debug
+```
+
+This prints the retrieved chunks together with rerank score, embedding score, section, topic, and quality metadata.
+
+4. Run a short evaluation sweep
+
+```bash
+python3 main.py eval --cases data/eval/jpm_10k_eval_cases.json --limit 3
+```
+
+This evaluates the same pipeline on a small curated JPM 10-K question set and shows answer output together with retrieval diagnostics.
+
+For a shorter demo, steps 2 and 3 are usually enough to show the grounded answer path and retrieval transparency.
+
+A static example report from a real run is available at [reports/sample_eval.md](/Users/ranxu/workspace/Rag-finance/reports/sample_eval.md).
+
 ## Retrieval And Reranking
 
 The JPM 10-K retriever uses a two-stage strategy:
@@ -285,6 +347,37 @@ Then use the same CLI command:
 python3 main.py ask "What are JPMorgan Chase's main business segments?"
 ```
 
+## Real Embeddings Configuration
+
+The project can also use a real OpenAI-style embedding API for retrieval while keeping the same CLI.
+
+Set environment variables like this:
+
+```bash
+export EMBEDDING_PROVIDER=openai
+export EMBEDDING_API_KEY=your_api_key
+export OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+export EMBEDDING_BASE_URL=https://api.openai.com/v1
+```
+
+Optional:
+
+```bash
+export OPENAI_EMBEDDING_DIMENSION=1536
+export OPENAI_EMBEDDING_BATCH_SIZE=32
+export EMBEDDING_TIMEOUT=60
+```
+
+`EMBEDDING_API_KEY` and `EMBEDDING_BASE_URL` are preferred for the embedding backend. If they are not set, the code falls back to `OPENAI_API_KEY` and `OPENAI_BASE_URL`.
+
+Then rebuild the index with the same command shape:
+
+```bash
+python3 main.py build-index --chunks data/processed/jpm_2025_10k_chunks.jsonl
+```
+
+If the embedding dimension changes, the index must be rebuilt. The retriever checks index metadata and raises an explicit error when the query embedding dimension does not match the stored index dimension.
+
 ## Retrieval Backend
 
 The code is written to prefer FAISS when available, which matches the spec. Chunk text and metadata are stored beside the vector index in SQLite, so retrieval storage is split into:
@@ -295,6 +388,8 @@ The code is written to prefer FAISS when available, which matches the spec. Chun
 In the current local environment, `faiss` and `numpy` are not installed, so the project automatically falls back to a stdlib-only retrieval backend. This keeps the pipeline runnable while preserving the same top-level interfaces. Once FAISS is installed, the code can switch to the FAISS backend without changing CLI usage.
 
 The answer generation layer prefers a real LLM when configured, but automatically falls back to a local grounded generator when no API key is available or the remote call fails. This keeps the repository runnable end-to-end while still making the demo stronger for GitHub and interview walkthroughs.
+
+The embedding layer follows the same pattern: it prefers a real OpenAI-style embedding backend when configured, but falls back to the local hashing embedding baseline if no embedding configuration is available or the API request fails.
 
 ## Tests
 
@@ -319,8 +414,7 @@ Current coverage includes:
 
 The next implementation target is:
 
-- real embedding backend
 - FAISS environment setup
-- stronger evidence filtering for local fallback generation
-- JPM eval report improvements such as section/topic hit diagnostics
+- side-by-side comparison between hashing and real embedding retrieval quality
+- optional reranker improvements for harder semantic questions
 - optional second 10-K filing for company-to-company comparison

@@ -24,6 +24,7 @@ except ModuleNotFoundError:
 class IndexBuildResult:
     backend: str
     chunk_count: int
+    embedding_metadata: dict[str, str | int]
 
 
 @dataclass
@@ -41,7 +42,7 @@ class VectorIndex:
 
     @classmethod
     def load(cls, input_path: Path) -> "VectorIndex":
-        meta = json.loads((input_path.with_suffix(".meta.json")).read_text(encoding="utf-8"))
+        meta = load_index_metadata(input_path)
         backend = meta["backend"]
         if backend == "faiss":
             return FaissVectorIndex.load(input_path)
@@ -148,7 +149,20 @@ def build_index_from_chunks(
         index = SimpleVectorIndex(chunks=chunks, vectors=vectors)
         backend = "simple"
     index.save(output_path)
-    return IndexBuildResult(backend=backend, chunk_count=len(chunks))
+    embedding_metadata = embedding_model.metadata()
+    meta_path = output_path.with_suffix(".meta.json")
+    meta = load_index_metadata(output_path)
+    meta["embedding"] = embedding_metadata
+    meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    return IndexBuildResult(
+        backend=backend,
+        chunk_count=len(chunks),
+        embedding_metadata=embedding_metadata,
+    )
+
+
+def load_index_metadata(index_path: Path) -> dict:
+    return json.loads(index_path.with_suffix(".meta.json").read_text(encoding="utf-8"))
 
 
 def _chunk_embedding_text(chunk: ChunkRecord) -> str:
