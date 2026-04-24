@@ -61,6 +61,13 @@ class EmbeddingCompareTests(unittest.TestCase):
                 status="ok",
             ),
             ExperimentResult(
+                backend_label="configured-local-bge",
+                summary=None,
+                results=[],
+                notes=["No local BGE configuration found in environment."],
+                status="skipped",
+            ),
+            ExperimentResult(
                 backend_label="configured-remote-embedding",
                 summary=None,
                 results=[],
@@ -73,6 +80,7 @@ class EmbeddingCompareTests(unittest.TestCase):
         self.assertIn("# Embedding Comparison Report", report)
         self.assertIn("| Backend | Status | Cases | Answered | Avg Lexical Overlap |", report)
         self.assertIn("hashing-baseline", report)
+        self.assertIn("configured-local-bge", report)
         self.assertIn("configured-remote-embedding", report)
         self.assertIn("### q1", report)
 

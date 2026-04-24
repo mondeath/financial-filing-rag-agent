@@ -357,7 +357,38 @@ python3 main.py ask "What are JPMorgan Chase's main business segments?"
 
 ## Real Embeddings Configuration
 
-The project can also use a real OpenAI-style embedding API for retrieval while keeping the same CLI.
+The project supports two stronger embedding paths beyond the local hashing baseline:
+
+- local `BGE` via `sentence-transformers`
+- remote OpenAI-style embedding APIs
+
+Fastest setup path:
+
+```bash
+cp .env.example .env
+source .env
+```
+
+Then choose one embedding option in `.env`.
+
+### Option A: Local BGE
+
+Example:
+
+```bash
+export EMBEDDING_PROVIDER=bge
+export LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+export LOCAL_EMBEDDING_DIMENSION=384
+export LOCAL_EMBEDDING_DEVICE=cpu
+export LOCAL_EMBEDDING_BATCH_SIZE=32
+export LOCAL_EMBEDDING_NORMALIZE=true
+```
+
+This path requires local Python packages such as `sentence-transformers`, `transformers`, and `torch`.
+
+### Option B: OpenAI-Style Remote Embeddings
+
+Then replace `your_api_key_here` in `.env` with your actual key.
 
 Set environment variables like this:
 
@@ -385,6 +416,12 @@ python3 main.py build-index --chunks data/processed/jpm_2025_10k_chunks.jsonl
 ```
 
 If the embedding dimension changes, the index must be rebuilt. The retriever checks index metadata and raises an explicit error when the query embedding dimension does not match the stored index dimension.
+
+To verify the current selection before rebuilding the index:
+
+```bash
+python3 scripts/check_embedding_backend.py
+```
 
 ## Retrieval Backend
 

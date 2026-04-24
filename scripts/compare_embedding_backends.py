@@ -23,6 +23,7 @@ from src.pipeline.rag_pipeline import RAGPipeline
 from src.retrieval.embeddings import (
     EmbeddingError,
     HashingEmbeddingModel,
+    build_local_bge_embedding_model_from_env,
     build_remote_embedding_model_from_env,
 )
 from src.retrieval.index import build_index_from_chunks
@@ -138,9 +139,9 @@ def build_comparison_report(experiments: list[ExperimentResult]) -> str:
         [
             "## Interpretation",
             "",
-            "- This comparison is most useful when the real embedding backend is available and both runs succeed on the same eval slice.",
+            "- This comparison is most useful when a stronger embedding backend such as local BGE or a remote embedding API is available on the same eval slice.",
             "- The lexical overlap metric is lightweight and should be read together with retrieved chunk titles and answer groundedness.",
-            "- If the real embedding backend is unavailable, the hashing baseline still provides a reproducible local reference point.",
+            "- If stronger embedding backends are unavailable, the hashing baseline still provides a reproducible local reference point.",
         ]
     )
     return "\n".join(lines).strip() + "\n"
@@ -171,6 +172,52 @@ def main() -> None:
             embedding_model=HashingEmbeddingModel(),
         )
     )
+
+    try:
+        local_model = build_local_bge_embedding_model_from_env()
+    except (EmbeddingError, ValueError) as exc:
+        experiments.append(
+            ExperimentResult(
+                backend_label="configured-local-bge",
+                summary=None,
+                results=[],
+                notes=[str(exc)],
+                status="failed",
+            )
+        )
+    else:
+        if local_model is None:
+            experiments.append(
+                ExperimentResult(
+                    backend_label="configured-local-bge",
+                    summary=None,
+                    results=[],
+                    notes=["No local BGE configuration found in environment."],
+                    status="skipped",
+                )
+            )
+        else:
+            try:
+                experiments.append(
+                    run_backend_eval(
+                        backend_label=local_model.describe(),
+                        chunks_path=args.chunks,
+                        cases_path=args.cases,
+                        top_k=args.top_k,
+                        limit=args.limit,
+                        embedding_model=local_model,
+                    )
+                )
+            except (EmbeddingError, ValueError) as exc:
+                experiments.append(
+                    ExperimentResult(
+                        backend_label=local_model.describe(),
+                        summary=None,
+                        results=[],
+                        notes=[str(exc)],
+                        status="failed",
+                    )
+                )
 
     remote_model = build_remote_embedding_model_from_env()
     if remote_model is None:

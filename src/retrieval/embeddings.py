@@ -1,9 +1,11 @@
 import hashlib
+import importlib
 import json
 import math
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from urllib import error, request
 
 from config import EMBEDDING_DIMENSION
@@ -73,6 +75,58 @@ class HashingEmbeddingModel(EmbeddingModel):
 
 class EmbeddingError(RuntimeError):
     pass
+
+
+@dataclass(slots=True)
+class LocalSentenceTransformerConfig:
+    model_name: str
+    dimension: int
+    device: str = "cpu"
+    normalize: bool = True
+    batch_size: int = 32
+
+
+class LocalSentenceTransformerEmbeddingModel(EmbeddingModel):
+    def __init__(self, config: LocalSentenceTransformerConfig) -> None:
+        self.config = config
+        try:
+            sentence_transformer_cls = _load_sentence_transformer_class()
+            self._model = sentence_transformer_cls(config.model_name, device=config.device)
+        except Exception as exc:
+            raise EmbeddingError(f"Failed to load local embedding model: {exc}") from exc
+
+    @property
+    def dimension(self) -> int:
+        return self.config.dimension
+
+    def embed_text(self, text: str) -> list[float]:
+        return self.embed_texts([text])[0]
+
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        try:
+            vectors = self._model.encode(
+                texts,
+                batch_size=self.config.batch_size,
+                normalize_embeddings=self.config.normalize,
+                convert_to_numpy=True,
+                show_progress_bar=False,
+            )
+        except Exception as exc:
+            raise EmbeddingError(f"Local embedding inference failed: {exc}") from exc
+        return [[float(value) for value in row] for row in vectors.tolist()]
+
+    def metadata(self) -> dict[str, str | int]:
+        model_name = self.config.model_name
+        if Path(model_name).exists():
+            model_name = Path(model_name).name
+        return {
+            "provider": "local",
+            "model": model_name,
+            "dimension": self.dimension,
+            "device": self.config.device,
+        }
 
 
 @dataclass(slots=True)
@@ -174,6 +228,15 @@ class FallbackEmbeddingModel(EmbeddingModel):
 
 def build_embedding_model() -> EmbeddingModel:
     provider = os.getenv("EMBEDDING_PROVIDER", "").strip().lower()
+    if provider == "bge":
+        try:
+            primary = build_local_bge_embedding_model_from_env()
+        except EmbeddingError:
+            return HashingEmbeddingModel()
+        if primary is None:
+            return HashingEmbeddingModel()
+        fallback = HashingEmbeddingModel(dimension=primary.dimension)
+        return FallbackEmbeddingModel(primary=primary, fallback=fallback)
     if provider != "openai":
         return HashingEmbeddingModel()
 
@@ -204,6 +267,25 @@ def build_remote_embedding_model_from_env() -> OpenAICompatibleEmbeddingModel | 
             model=model,
             dimension=dimension,
             timeout=timeout,
+            batch_size=batch_size,
+        )
+    )
+
+
+def build_local_bge_embedding_model_from_env() -> LocalSentenceTransformerEmbeddingModel | None:
+    model_name = os.getenv("LOCAL_EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5").strip()
+    if not model_name:
+        return None
+    dimension = int(os.getenv("LOCAL_EMBEDDING_DIMENSION", "384"))
+    batch_size = int(os.getenv("LOCAL_EMBEDDING_BATCH_SIZE", "32"))
+    device = os.getenv("LOCAL_EMBEDDING_DEVICE", "cpu").strip() or "cpu"
+    normalize = _as_bool(os.getenv("LOCAL_EMBEDDING_NORMALIZE", "true"))
+    return LocalSentenceTransformerEmbeddingModel(
+        LocalSentenceTransformerConfig(
+            model_name=model_name,
+            dimension=dimension,
+            device=device,
+            normalize=normalize,
             batch_size=batch_size,
         )
     )
@@ -244,3 +326,20 @@ def _tokenize(text: str) -> list[str]:
     if buffer:
         tokens.append("".join(buffer))
     return tokens
+
+
+def _load_sentence_transformer_class():
+    try:
+        module = importlib.import_module("sentence_transformers")
+    except ModuleNotFoundError as exc:
+        raise EmbeddingError(
+            "sentence-transformers is not installed. Install sentence-transformers, transformers, and torch to use LOCAL_EMBEDDING_MODEL."
+        ) from exc
+    sentence_transformer_cls = getattr(module, "SentenceTransformer", None)
+    if sentence_transformer_cls is None:
+        raise EmbeddingError("sentence_transformers.SentenceTransformer is unavailable")
+    return sentence_transformer_cls
+
+
+def _as_bool(value: str) -> bool:
+    return value.strip().lower() not in {"0", "false", "no", "off"}

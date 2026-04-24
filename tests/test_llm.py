@@ -14,6 +14,8 @@ from src.retrieval.embeddings import (
     EmbeddingError,
     FallbackEmbeddingModel,
     HashingEmbeddingModel,
+    LocalSentenceTransformerConfig,
+    LocalSentenceTransformerEmbeddingModel,
     OpenAICompatibleEmbeddingConfig,
     OpenAICompatibleEmbeddingModel,
     build_embedding_model,
@@ -34,6 +36,31 @@ class _FakeHTTPResponse:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         return None
+
+
+class _FakeSentenceTransformer:
+    def __init__(self, model_name: str, device: str = "cpu") -> None:
+        self.model_name = model_name
+        self.device = device
+
+    def encode(
+        self,
+        texts,
+        batch_size: int,
+        normalize_embeddings: bool,
+        convert_to_numpy: bool,
+        show_progress_bar: bool,
+    ):
+        del batch_size, normalize_embeddings, convert_to_numpy, show_progress_bar
+
+        class _FakeArray:
+            def __init__(self, data):
+                self._data = data
+
+            def tolist(self):
+                return self._data
+
+        return _FakeArray([[1.0, 0.0, 0.0] for _ in texts])
 
 
 class LLMTests(unittest.TestCase):
@@ -100,6 +127,34 @@ class LLMTests(unittest.TestCase):
         self.assertEqual(model.primary.config.api_key, "embed-key")
         self.assertEqual(model.primary.config.base_url, "https://embeddings.example.com/v1")
 
+    def test_build_embedding_model_uses_bge_provider_when_available(self) -> None:
+        env = {
+            "EMBEDDING_PROVIDER": "bge",
+            "LOCAL_EMBEDDING_MODEL": "BAAI/bge-small-en-v1.5",
+            "LOCAL_EMBEDDING_DIMENSION": "3",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            with mock.patch(
+                "src.retrieval.embeddings._load_sentence_transformer_class",
+                return_value=_FakeSentenceTransformer,
+            ):
+                model = build_embedding_model()
+        self.assertIsInstance(model, FallbackEmbeddingModel)
+        self.assertEqual(model.primary.metadata()["model"], "BAAI/bge-small-en-v1.5")
+
+    def test_build_embedding_model_falls_back_when_bge_dependencies_missing(self) -> None:
+        env = {
+            "EMBEDDING_PROVIDER": "bge",
+            "LOCAL_EMBEDDING_MODEL": "BAAI/bge-small-en-v1.5",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            with mock.patch(
+                "src.retrieval.embeddings._load_sentence_transformer_class",
+                side_effect=EmbeddingError("sentence-transformers is not installed"),
+            ):
+                model = build_embedding_model()
+        self.assertIsInstance(model, HashingEmbeddingModel)
+
     def test_openai_embedding_model_batches_inputs(self) -> None:
         model = OpenAICompatibleEmbeddingModel(
             OpenAICompatibleEmbeddingConfig(
@@ -118,6 +173,20 @@ class LLMTests(unittest.TestCase):
             vectors = model.embed_texts(["a", "b", "c"])
         self.assertEqual(vectors, [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
         self.assertEqual(urlopen.call_count, 2)
+
+    def test_local_sentence_transformer_embedding_model_encodes_texts(self) -> None:
+        with mock.patch(
+            "src.retrieval.embeddings._load_sentence_transformer_class",
+            return_value=_FakeSentenceTransformer,
+        ):
+            model = LocalSentenceTransformerEmbeddingModel(
+                LocalSentenceTransformerConfig(
+                    model_name="BAAI/bge-small-en-v1.5",
+                    dimension=3,
+                )
+            )
+        vectors = model.embed_texts(["a", "b"])
+        self.assertEqual(vectors, [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
 
     def test_fallback_embedding_model_uses_hashing_on_remote_failure(self) -> None:
         env = {
