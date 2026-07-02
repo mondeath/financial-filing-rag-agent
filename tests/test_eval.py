@@ -98,6 +98,7 @@ class EvalTests(unittest.TestCase):
         self.assertIn("Retrieved Chunks:", report)
         self.assertIn("section=Item 1 Business", report)
         self.assertIn("embedding=0.9000", report)
+        self.assertIn("query_type=n/a", report)
         self.assertEqual(summary.case_count, 1)
         self.assertEqual(summary.answered_count, 1)
         self.assertAlmostEqual(summary.avg_sources_per_answer, 1.0, places=3)
@@ -112,6 +113,8 @@ def load_eval_cases_from_dict(payload: dict):
         task_type=payload["task_type"],
         reference_answer=payload["reference_answer"],
         source_dataset=payload["source_dataset"],
+        expected_sections=payload.get("expected_sections", []),
+        expected_topics=payload.get("expected_topics", []),
     )
 
 

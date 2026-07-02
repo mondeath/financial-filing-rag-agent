@@ -12,6 +12,8 @@ class EvalCase:
     task_type: str
     reference_answer: str
     source_dataset: str
+    expected_sections: list[str]
+    expected_topics: list[str]
 
 
 @dataclass
@@ -43,6 +45,8 @@ def load_eval_cases(path: Path) -> list[EvalCase]:
                 task_type=str(item.get("task_type", "qa")),
                 reference_answer=str(item.get("reference_answer", "")),
                 source_dataset=str(item.get("source_dataset", "")),
+                expected_sections=_string_list(item.get("expected_sections", [])),
+                expected_topics=_string_list(item.get("expected_topics", [])),
             )
         )
     return cases
@@ -90,6 +94,8 @@ def build_eval_report(results: list[EvalResult]) -> str:
                 f"[{result.case.qid}] {result.case.question}",
                 f"System Answer: {result.response.answer}",
                 f"Reference Answer: {result.reference_answer}",
+                f"Expected Sections: {', '.join(result.case.expected_sections) if result.case.expected_sections else 'None'}",
+                f"Expected Topics: {', '.join(result.case.expected_topics) if result.case.expected_topics else 'None'}",
                 f"Sources: {'; '.join(result.response.sources) if result.response.sources else 'None'}",
                 f"Evidence: {' | '.join(result.response.evidence) if result.response.evidence else 'None'}",
                 f"Lexical Overlap: {result.lexical_overlap:.3f}",
@@ -140,10 +146,18 @@ def _format_retrieved_chunks(retrieved_chunks) -> str:
     lines: list[str] = []
     for index, item in enumerate(retrieved_chunks, 1):
         chunk = item.chunk
+        query_type = item.rerank.query_type if item.rerank else "n/a"
+        section_bonus = item.rerank.section_bonus if item.rerank else 0.0
+        topic_bonus = item.rerank.topic_bonus if item.rerank else 0.0
+        quality_bonus = item.rerank.quality_bonus if item.rerank else 0.0
         lines.append(
             (
                 f"- {index}. score={item.score:.4f}, "
                 f"embedding={item.embedding_score:.4f}, "
+                f"query_type={query_type}, "
+                f"section_bonus={section_bonus:.4f}, "
+                f"topic_bonus={topic_bonus:.4f}, "
+                f"quality_bonus={quality_bonus:.4f}, "
                 f"section={chunk.section or 'n/a'}, "
                 f"primary_topic={chunk.primary_topic or 'n/a'}, "
                 f"secondary_topic={chunk.secondary_topic or 'n/a'}, "
@@ -152,6 +166,12 @@ def _format_retrieved_chunks(retrieved_chunks) -> str:
             )
         )
     return "\n".join(lines)
+
+
+def _string_list(value) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
 
 
 def _lexical_overlap(system_answer: str, reference_answer: str) -> float:

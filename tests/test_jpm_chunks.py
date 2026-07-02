@@ -39,9 +39,23 @@ class JPMChunkTests(unittest.TestCase):
 
     def test_business_query_profile(self) -> None:
         profile = classify_query("What are the main business segments?")
-        self.assertEqual(profile.query_type, "business")
+        self.assertEqual(profile.query_type, "business_segment")
         self.assertIn("Item 1 Business", profile.sections)
         self.assertIn("business_segment", profile.topics)
+
+    def test_risk_query_profiles_are_specific(self) -> None:
+        self.assertEqual(
+            classify_query("What does the filing say about liquidity risk management?").query_type,
+            "risk_liquidity",
+        )
+        self.assertEqual(
+            classify_query("How does JPMorgan Chase describe credit risk?").query_type,
+            "risk_credit",
+        )
+        self.assertEqual(
+            classify_query("What does the filing say about AI-related risks?").query_type,
+            "risk_ai",
+        )
 
     def test_rerank_prefers_matching_business_metadata(self) -> None:
         chunks = [
@@ -79,6 +93,8 @@ class JPMChunkTests(unittest.TestCase):
         results = retriever.retrieve("What are the main business segments?", top_k=2)
 
         self.assertEqual(results[0].chunk.chunk_id, "segment")
+        self.assertIsNotNone(results[0].rerank)
+        self.assertEqual(results[0].rerank.query_type, "business_segment")
 
 
 if __name__ == "__main__":

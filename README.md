@@ -18,8 +18,8 @@ This project follows the scope in [RAG_Project_Spec.md](/Users/ranxu/workspace/R
 
 - Focused corpus: a curated JPMorgan Chase 2025 Form 10-K dataset instead of a broad, noisy multi-source corpus
 - Grounded output: answers are returned in `Answer / Sources / Evidence` format
-- Inspectable retrieval: `--debug` exposes rerank score, section, topic, and quality metadata
-- Metadata-aware ranking: retrieval combines vector similarity with SEC filing structure
+- Inspectable retrieval: `--debug` exposes query type plus section, topic, quality, embedding, and final rerank scores
+- Risk-aware metadata reranking: retrieval combines vector similarity with SEC filing structure and query-specific risk profiles
 - Demo-friendly CLI: the full pipeline can be shown with `build-index`, `ask`, and `eval`
 
 ## Why This Project
@@ -43,7 +43,7 @@ Implemented:
 - `data` module for loading and validating `finance_docs.jsonl`
 - `chunk` module with `chunk_size=500` and `overlap=80`
 - JPM 10-K chunk schema support with section/topic/quality metadata
-- `retrieval` module with pluggable embeddings, index loading/search, and metadata-aware reranking
+- `retrieval` module with pluggable embeddings, index loading/search, and risk-aware metadata reranking
 - SQLite-backed chunk metadata/text store for retrieval results
 - `llm` module with OpenAI-style API support and local fallback
 - `pipeline` module with `answer_question(question)`
@@ -267,6 +267,12 @@ Compare hashing and real embedding retrieval on the JPM eval slice:
 python3 scripts/compare_embedding_backends.py --limit 5
 ```
 
+Compare embedding-only retrieval against risk-aware metadata reranking:
+
+```bash
+python3 scripts/compare_reranking.py
+```
+
 If `LLM_PROVIDER=openai` and a valid API key is configured, the CLI will use a real LLM backend automatically. If not, it falls back to the local grounded generator with no CLI change.
 
 ## Demo Workflow
@@ -295,7 +301,7 @@ This returns a citation-style answer constrained to retrieved filing context.
 python3 main.py ask "What are JPMorgan Chase's main business segments?" --debug
 ```
 
-This prints the retrieved chunks together with rerank score, embedding score, section, topic, and quality metadata.
+This prints the retrieved chunks together with query type, embedding score, section bonus, topic bonus, quality bonus, final score, section, topic, and quality metadata.
 
 4. Run a short evaluation sweep
 
@@ -311,24 +317,30 @@ A static example report from a real run is available at [reports/sample_eval.md]
 
 For embedding-backend comparison, the repository also includes `scripts/compare_embedding_backends.py`, which generates `reports/embedding_comparison.md`.
 
+For reranking evaluation, `scripts/compare_reranking.py` generates `reports/reranking_ablation.md`.
+
 ## Retrieval And Reranking
 
 The JPM 10-K retriever uses a two-stage strategy:
 
 - vector retrieval over chunk text plus metadata
-- metadata-aware reranking using section, topic, and quality labels
+- risk-aware metadata reranking using section, topic, title, and quality labels
 
-The reranking strategy follows [data/raw/spec.md](/Users/ranxu/workspace/Rag-finance/data/raw/spec.md):
+Risk-aware Metadata Reranking:
+
+The retriever first retrieves a broad candidate pool using vector similarity, then applies a query-aware reranking policy based on SEC filing structure. Query profiles such as business competition, regulatory risk, liquidity risk, technology/cybersecurity risk, and capital risk are mapped to preferred filing sections and topic labels. The final ranking score combines embedding similarity with section, topic, and chunk-quality bonuses, and the CLI exposes a per-chunk score breakdown for debugging and evaluation.
+
+The reranking strategy is:
 
 ```text
 final_score =
 0.70 * embedding_score
-+ 0.15 * section_bonus
-+ 0.10 * topic_bonus
-+ 0.05 * quality_bonus
++ section_bonus
++ topic_bonus
++ quality_bonus
 ```
 
-For example, business questions are biased toward `Item 1 Business`, while risk questions are biased toward `Item 1A Risk Factors` and `Item 7 MD&A`.
+For example, business-competition questions are biased toward `Item 1 Business`, liquidity and market-risk questions are biased toward `Item 7 MD&A`, and regulatory or cybersecurity questions are biased toward `Item 1A Risk Factors`.
 
 ## Real LLM Configuration
 

@@ -32,6 +32,8 @@ class EmbeddingCompareTests(unittest.TestCase):
                 task_type="qa",
                 reference_answer="The Firm has three reportable business segments.",
                 source_dataset="demo",
+                expected_sections=["Item 1 Business"],
+                expected_topics=["business_segment"],
             ),
             response=RAGResponse(
                 answer="The Firm has three reportable business segments.",

@@ -3,7 +3,7 @@ import unittest
 from src.data.schemas import ChunkRecord
 from src.pipeline.debug import format_prompt_debug, format_retrieval_debug
 from src.pipeline.rag_pipeline import RAGResponse
-from src.retrieval.retriever import RetrievedChunk
+from src.retrieval.retriever import RerankBreakdown, RetrievedChunk
 
 
 class DebugFormattingTests(unittest.TestCase):
@@ -29,6 +29,14 @@ class DebugFormattingTests(unittest.TestCase):
                     ),
                     score=0.5,
                     embedding_score=0.4,
+                    rerank=RerankBreakdown(
+                        query_type="business_segment",
+                        embedding_score=0.4,
+                        section_bonus=0.15,
+                        topic_bonus=0.1,
+                        quality_bonus=0.05,
+                        final_score=0.5,
+                    ),
                 )
             ],
             prompt="prompt text",
@@ -39,6 +47,10 @@ class DebugFormattingTests(unittest.TestCase):
         self.assertIn("Retrieved Chunks:", debug)
         self.assertIn("score=0.5000", debug)
         self.assertIn("embedding=0.4000", debug)
+        self.assertIn("query_type=business_segment", debug)
+        self.assertIn("section_bonus=0.1500", debug)
+        self.assertIn("topic_bonus=0.1000", debug)
+        self.assertIn("quality_bonus=0.0500", debug)
         self.assertIn("section=Item 1 Business", debug)
 
     def test_format_prompt_debug(self) -> None:
