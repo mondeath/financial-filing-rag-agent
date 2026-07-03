@@ -104,10 +104,17 @@ def classify_query(query: str) -> QueryProfile:
             query_type="risk_ai",
             sections=["Item 1A Risk Factors"],
             topics=["cyber_risk", "technology_risk", "operational_risk"],
-            title_keywords=["ai", "advanced technologies", "cybersecurity", "people risk"],
+            title_keywords=[
+                "advanced technologies",
+                "generative ai",
+                "agentic ai",
+                "artificial intelligence",
+                "cybersecurity",
+                "technology",
+            ],
         )
 
-    if any(k in normalized for k in ["cyber", "cybersecurity", "technology", "technological"]):
+    if _has_any_keyword(normalized, ["cyber", "cybersecurity", "technology", "technological"]):
         return QueryProfile(
             query_type="risk_technology",
             sections=["Item 1A Risk Factors"],
@@ -115,7 +122,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["cybersecurity", "technology", "advanced technologies"],
         )
 
-    if any(k in normalized for k in ["liquidity", "funding", "contingency funding"]):
+    if _has_any_keyword(normalized, ["liquidity", "funding", "contingency funding"]):
         return QueryProfile(
             query_type="risk_liquidity",
             sections=["Item 7 MD&A"],
@@ -123,7 +130,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["liquidity", "funding", "contingency"],
         )
 
-    if any(k in normalized for k in ["market risk", "value-at-risk", "interest rate", "foreign exchange"]):
+    if _has_any_keyword(normalized, ["market risk", "value-at-risk", "interest rate", "foreign exchange"]):
         return QueryProfile(
             query_type="risk_market",
             sections=["Item 7 MD&A", "Item 1A Risk Factors"],
@@ -131,7 +138,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["market risk", "value-at-risk"],
         )
 
-    if any(k in normalized for k in ["credit risk", "credit and investment", "default"]):
+    if _has_any_keyword(normalized, ["credit risk", "credit and investment", "default"]):
         return QueryProfile(
             query_type="risk_credit",
             sections=["Item 7 MD&A"],
@@ -139,15 +146,30 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["credit risk", "credit and investment"],
         )
 
-    if any(k in normalized for k in ["capital", "capital requirement", "capital regulation"]):
+    if _has_any_keyword(
+        normalized,
+        [
+            "capital requirement",
+            "capital requirements",
+            "capital regulation",
+            "regulatory capital",
+            "capital adequacy",
+        ],
+    ):
         return QueryProfile(
             query_type="risk_capital",
             sections=["Item 7 MD&A", "Item 1 Business", "Item 1A Risk Factors"],
             topics=["capital_regulation", "regulatory_risk", "financial_risk"],
-            title_keywords=["capital", "regulatory capital"],
+            title_keywords=["capital requirements", "capital regulation", "regulatory capital"],
         )
 
-    if any(k in normalized for k in ["risk governance", "governance", "risk type", "risk categories"]):
+    if (
+        _has_any_keyword(normalized, ["risk governance", "risk type", "risk types", "risk categories"])
+        or (
+            _has_any_keyword(normalized, ["governance"])
+            and _has_any_keyword(normalized, ["risk", "risks", "risk management"])
+        )
+    ):
         return QueryProfile(
             query_type="risk_governance",
             sections=["Item 7 MD&A"],
@@ -155,7 +177,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["risk governance", "risk management", "risk types"],
         )
 
-    if any(k in normalized for k in ["regulation", "regulatory", "compliance", "litigation"]):
+    if _has_any_keyword(normalized, ["regulation", "regulatory", "compliance", "litigation"]):
         return QueryProfile(
             query_type="risk_regulatory",
             sections=["Item 1A Risk Factors", "Item 1 Business", "Item 7 MD&A"],
@@ -163,7 +185,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["legal", "regulatory", "regulation", "compliance"],
         )
 
-    if any(k in normalized for k in ["competitive", "competition", "competitor"]):
+    if _has_any_keyword(normalized, ["competitive", "competition", "competitor", "competitors"]):
         return QueryProfile(
             query_type="business_competition",
             sections=["Item 1 Business", "Item 1A Risk Factors"],
@@ -171,7 +193,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["competitive", "competition"],
         )
 
-    if any(k in normalized for k in ["subsidiary", "subsidiaries", "operating structure", "bank and non-bank"]):
+    if _has_any_keyword(normalized, ["subsidiary", "subsidiaries", "operating structure", "bank and non-bank"]):
         return QueryProfile(
             query_type="business_structure",
             sections=["Item 1 Business"],
@@ -179,7 +201,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["subsidiaries", "operating structure", "bank"],
         )
 
-    if any(k in normalized for k in ["segment", "business segment", "reportable"]):
+    if _has_any_keyword(normalized, ["segment", "segments", "business segment", "business segments", "reportable"]):
         return QueryProfile(
             query_type="business_segment",
             sections=["Item 1 Business", "Item 7 MD&A"],
@@ -187,7 +209,7 @@ def classify_query(query: str) -> QueryProfile:
             title_keywords=["business segments", "segment"],
         )
 
-    if any(k in normalized for k in ["revenue", "expense", "balance", "cash flow", "income", "earnings"]):
+    if _has_any_keyword(normalized, ["revenue", "expense", "balance", "cash flow", "income", "earnings"]):
         return QueryProfile(
             query_type="performance_general",
             sections=["Item 7 MD&A"],

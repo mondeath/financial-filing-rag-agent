@@ -4,7 +4,7 @@ A focused V1 RAG pipeline for SEC 10-K annual report analysis with citation-styl
 
 The main demo corpus is JPMorgan Chase & Co.'s 2025 Form 10-K filing, filed on 2026-02-13. The project is designed as a financial research assistant that retrieves evidence from company filings and answers only from retrieved context.
 
-This project follows the scope in [RAG_Project_Spec.md](/Users/ranxu/workspace/Rag-finance/RAG_Project_Spec.md) and currently supports:
+This project follows the scope in [RAG_Project_Spec.md](RAG_Project_Spec.md) and currently supports:
 
 - document ingestion
 - text chunking
@@ -313,7 +313,7 @@ This evaluates the same pipeline on a small curated JPM 10-K question set and sh
 
 For a shorter demo, steps 2 and 3 are usually enough to show the grounded answer path and retrieval transparency.
 
-A static example report from a real run is available at [reports/sample_eval.md](/Users/ranxu/workspace/Rag-finance/reports/sample_eval.md).
+A static example report from a real run is available at [reports/sample_eval.md](reports/sample_eval.md).
 
 For embedding-backend comparison, the repository also includes `scripts/compare_embedding_backends.py`, which generates `reports/embedding_comparison.md`.
 

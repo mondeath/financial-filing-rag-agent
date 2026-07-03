@@ -129,6 +129,7 @@ def build_report(comparisons: list[CaseComparison]) -> str:
             "- Section hit rates show whether reranking moves candidates into the expected SEC filing area.",
             "- Topic hit rates show whether reranking improves alignment with curated chunk labels.",
             "- A top-k hit with a top-1 miss means the answer may still be recoverable, but ranking or generation can choose a weaker passage.",
+            "- This is a small curated JPM 10-K evaluation slice; the goal is to validate whether the reranker uses filing structure and curated metadata effectively, not to claim broad benchmark-level generalization.",
         ]
     )
     return "\n".join(lines).strip() + "\n"
